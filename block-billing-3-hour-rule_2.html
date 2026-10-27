@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Block Billing — The 3-Hour Rule</title>
+<style>
+:root{
+  --blue:#1f4e9e; --blue-d:#18408a; --blue-l:#c9d6e8; --bg:#e8edf3;
+  --red:#8e1b1b; --green:#1d5e2a; --amber:#f59e0b;
+  --ok-bg:#e6f6e8; --ok-bd:#3a9a4a; --bad-bg:#fde8e8; --bad-bd:#c9363e;
+  --ink:#1f2937; --mute:#6b7280; --line:#d5dbe4;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font:13px/1.45 "Segoe UI",Arial,sans-serif;color:var(--ink);padding:12px}
+.app{position:relative;max-width:940px;margin:0 auto}
+
+/* ---------- top banner ---------- */
+.banner{border-radius:4px;overflow:hidden;border:1px solid #9fb2cf;margin-bottom:12px}
+.banner-top{background:var(--blue);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.banner-top h1{font-size:15px;margin:0;flex:1;min-width:200px}
+.pill{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);border-radius:12px;padding:2px 12px;font-size:11px;font-weight:600}
+.seg{display:inline-flex;background:rgba(0,0,0,.22);border-radius:14px;padding:2px}
+.seg button{border:0;background:transparent;color:#dbe6f7;font:600 11px "Segoe UI",Arial;padding:4px 12px;border-radius:12px;cursor:pointer}
+.seg button.on{background:#fff;color:var(--blue)}
+.seg button:focus-visible{outline:2px solid #fff;outline-offset:1px}
+.banner-sub{background:var(--blue-l);padding:9px 16px;font-size:12.5px}
+
+/* ---------- layout ---------- */
+.main{display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start}
+@media(max-width:760px){.main{grid-template-columns:1fr}}
+
+/* ---------- left instruction card ---------- */
+.card{background:#fff;border:1px solid var(--line);border-radius:4px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.card-h{display:flex;align-items:center;gap:8px;color:#fff;padding:9px 12px;font-weight:700;font-size:13px}
+.card-h.red{background:var(--red)} .card-h.blue{background:var(--blue)} .card-h.green{background:var(--green)}
+.num{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.25);display:grid;place-items:center;font-size:11px;flex:none}
+.card-b{padding:12px 12px 14px;font-size:12.5px}
+.card-b p{margin:0 0 9px}
+.card-b b.k{color:var(--blue)}
+.do{border:2px solid var(--blue);border-radius:6px;background:#f3f7fd;padding:8px 10px;margin:4px 0 10px}
+.do .lbl{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--blue);display:block;margin-bottom:2px}
+.do .act{font-weight:700;font-size:13.5px;color:#10264d}
+.do.watch{border-style:dashed}
+.checks{list-style:none;margin:6px 0 0;padding:0}
+.checks li{display:flex;gap:7px;align-items:flex-start;margin:3px 0;color:#374151}
+.checks li::before{content:"";width:14px;height:14px;border:2px solid #9ca3af;border-radius:3px;flex:none;margin-top:1px}
+.checks li.on{color:var(--green);font-weight:600}
+.checks li.on::before{background:var(--ok-bd);border-color:var(--ok-bd);content:"✓";color:#fff;font-size:10px;line-height:10px;text-align:center}
+.tip{background:#fff7d6;border:1px solid #f0d77a;border-radius:4px;padding:7px 9px;font-size:12px;margin-top:8px}
+.tip.warn{background:#fff3cd}
+.fb{border-radius:4px;padding:7px 9px;margin-top:9px;font-size:12px;display:none}
+.fb.show{display:block}
+.fb.ok{background:var(--ok-bg);border:1px solid var(--ok-bd);color:#14532d}
+.fb.no{background:#fff1f1;border:1px solid var(--bad-bd);color:#7f1d1d}
+.fb.info{background:#eef4ff;border:1px solid #9db8e6;color:#1e3a8a}
+.hints{display:flex;gap:6px;margin-top:9px}
+.hints button{flex:1;font:600 11.5px "Segoe UI",Arial;padding:5px 6px;border:1px solid #b8c4d8;background:#fff;color:var(--blue);border-radius:4px;cursor:pointer}
+.hints button:hover{background:#eef4ff}
+.hintbox{display:none;margin-top:7px;font-size:12px;color:#334155;background:#f8fafc;border-left:3px solid var(--blue);padding:5px 8px}
+.hintbox.show{display:block}
+.nav{display:flex;gap:10px;margin-top:10px}
+.nav button{flex:1;padding:8px 6px;border-radius:3px;font:600 13px "Segoe UI",Arial;cursor:pointer;border:1px solid #b5bdc9;background:#fff;color:#374151}
+.nav button.next{background:var(--blue);border-color:var(--blue-d);color:#fff}
+.nav button:disabled{opacity:.45;cursor:not-allowed}
+.nav button.next.ready{animation:glow 1.3s ease-in-out infinite}
+.dots{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.dots i{width:8px;height:8px;border-radius:50%;background:#c3cad6;display:block;border:0;padding:0}
+.dots i.vis{background:var(--green)} .dots i.cur{background:var(--blue)}
+.dots.click i{cursor:pointer}
+.roadmap{display:flex;flex-direction:column;gap:3px;margin-top:6px;font-size:12px}
+.roadmap span{display:flex;gap:6px}
+.roadmap span b{color:var(--blue);min-width:14px}
+
+/* ---------- right: the form ---------- */
+.win{position:relative;background:#fff;border:1px solid #9fa8b6;border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,.15);overflow:hidden}
+.win-h{background:var(--blue);color:#fff;font-weight:700;padding:9px 12px;display:flex;justify-content:space-between;font-size:12.5px}
+.win-h small{font-weight:400;opacity:.85}
+.demo{background:#1e50a8;color:#fff;font-size:12px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.25)}
+.demo b{letter-spacing:.02em}
+.form{padding:0}
+.entry-tag{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--mute);padding:7px 12px 0;text-transform:uppercase;min-height:20px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;padding:6px 12px 8px}
+.row{display:grid;grid-template-columns:104px 1fr;gap:8px;align-items:center;margin:4px 0;min-height:24px}
+.row label{text-align:right;color:#555;font-size:12px}
+.fld{width:100%;border:1px solid #cfd4db;background:#f1f2f4;color:#8a8f98;border-radius:2px;padding:3px 7px;font:12px "Segoe UI",Arial;height:24px}
+.fld.tall{height:auto;line-height:1.25;font-size:10.5px;padding:3px 6px}
+.fld.edit{background:#fff;color:#111;border-color:#6b88b8;font-weight:600}
+.fld.edit:focus{outline:2px solid var(--blue);outline-offset:0}
+.fld.static{background:#f1f2f4;color:#111;border-color:#c5cad2;font-weight:600}
+.chk{width:13px;height:13px;accent-color:#9aa;pointer-events:none}
+.sec{border-top:1px solid var(--line)}
+.desc-l{padding:7px 12px 0;font-size:12px;color:#555}
+.desc-l em{font-style:normal;font-size:11px;color:#1d6b46;font-weight:600}
+.desc{margin:5px 12px 9px;padding:7px 9px;background:#e8ecf6;border:1px solid #c7cfe3;border-radius:3px;font-size:12px}
+.desc.carried{background:#e6f6e8;border-color:var(--ok-bd)}
+.tgt{position:relative}
+.lab-wrap{display:flex;align-items:center;gap:8px;position:relative}
+.lab-wrap .fld{flex:1}
+.badge{flex:none;font-size:10px;font-weight:700;line-height:1.15;border-radius:10px;padding:4px 7px;text-align:left;width:68px;border:1px solid}
+.badge.bad{background:#ffe2e2;color:#9b1c1c;border-color:#e08a8a}
+.badge.ok{background:#e6f6e8;color:#166534;border-color:#7fc58a}
+.foot{display:flex;justify-content:flex-end;gap:7px;padding:9px 12px;background:#f1f2f4;border-top:1px solid var(--line)}
+.btn{font:600 12px "Segoe UI",Arial;padding:5px 12px;border-radius:2px;border:1px solid #aab;background:#f3f3f3;color:#444;cursor:pointer}
+.btn.b{background:var(--blue);border-color:var(--blue-d);color:#fff}
+.btn.g{background:#1d5e2a;border-color:#154d21;color:#fff}
+.btn.w{background:#fff}
+.btn.pressed{transform:translateY(1px) scale(.97);filter:brightness(.85)}
+
+/* state colours */
+.fld.bad{background:var(--bad-bg);border-color:var(--bad-bd);color:#8e1b1b;font-weight:700}
+.fld.ok{background:var(--ok-bg);border-color:var(--ok-bd);color:#14532d;font-weight:700}
+.fld.target,.btn.target,.clickbox.target{animation:pulse 1.2s ease-in-out infinite}
+.clickbox{border-radius:3px}
+.clickbox.target{cursor:pointer}
+.clr{position:absolute;right:4px;top:3px;border:0;background:#e5e7eb;border-radius:3px;font-size:11px;padding:0 6px;height:18px;cursor:pointer;display:none;color:#444}
+.clr.show{display:block}
+
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.0),0 0 0 2px rgba(245,158,11,.9)}50%{box-shadow:0 0 0 6px rgba(245,158,11,.35),0 0 0 2px rgba(245,158,11,1)}}
+@keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(31,78,158,.0)}50%{box-shadow:0 0 0 5px rgba(31,78,158,.28)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+
+/* toast + overlays */
+.toast{position:absolute;left:50%;bottom:58px;transform:translate(-50%,10px);background:#111827;color:#fff;font-size:12px;padding:8px 14px;border-radius:6px;opacity:0;transition:.25s;pointer-events:none;z-index:5;max-width:90%;text-align:center}
+.toast.show{opacity:.96;transform:translate(-50%,0)}
+.saved{position:absolute;inset:0;background:rgba(255,255,255,.96);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;z-index:6}
+.saved.show{display:flex}
+.saved .big{width:54px;height:54px;border-radius:50%;background:var(--ok-bd);color:#fff;font-size:30px;display:grid;place-items:center;margin-bottom:10px}
+.saved h2{margin:0 0 4px;color:var(--green);font-size:18px}
+.recap{margin:12px 0;border:1px solid var(--line);border-radius:6px;overflow:hidden;min-width:300px;text-align:left}
+.recap div{padding:7px 12px;display:flex;justify-content:space-between;gap:20px}
+.recap div+div{border-top:1px solid var(--line)}
+.saved .acts{display:flex;gap:8px;margin-top:6px}
+.saved .acts button{padding:7px 14px;border-radius:4px;font:600 12.5px "Segoe UI",Arial;cursor:pointer;border:1px solid #b5bdc9;background:#fff}
+.saved .acts button.p{background:var(--blue);color:#fff;border-color:var(--blue-d)}
+
+.choose{position:absolute;inset:0;background:rgba(232,237,243,.97);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding-top:20px;border-radius:4px}
+.choose.hide{display:none}
+.choose .box{max-width:620px;width:100%;text-align:center}
+.choose h2{margin:0 0 4px;color:var(--blue);font-size:19px}
+.choose p{margin:0 0 16px;color:#475569}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.opts{grid-template-columns:1fr}}
+.opt{background:#fff;border:2px solid var(--line);border-radius:8px;padding:18px 14px;cursor:pointer;text-align:left;font:inherit;color:inherit;transition:.15s}
+.opt:hover,.opt:focus-visible{border-color:var(--blue);box-shadow:0 4px 14px rgba(31,78,158,.18);outline:none}
+.opt .ic{font-size:26px;display:block;margin-bottom:6px}
+.opt b{display:block;font-size:15px;color:var(--blue);margin-bottom:4px}
+.opt span{color:#475569;font-size:12.5px}
+.opt em{display:inline-block;margin-top:8px;font-style:normal;font-size:11px;font-weight:700;color:#166534;background:#e6f6e8;border-radius:10px;padding:2px 9px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- header banner -->
+  <div class="banner">
+    <div class="banner-top">
+      <h1>Block Billing — The 3-Hour Rule</h1>
+      <div class="seg" role="group" aria-label="Activity mode">
+        <button id="mWalk" type="button">Walkthrough</button>
+        <button id="mTry" type="button">Try It</button>
+      </div>
+      <span class="pill" id="pill">Step 1 of 6</span>
+    </div>
+    <div class="banner-sub" id="bsub"></div>
+  </div>
+
+  <!-- body -->
+  <div class="main">
+    <!-- left: instructions -->
+    <div>
+      <div class="card" id="card">
+        <div class="card-h blue" id="ch"><span class="num" id="cn">1</span><span id="ct"></span></div>
+        <div class="card-b" id="cb"></div>
+      </div>
+      <div class="nav">
+        <button type="button" id="back">← Back</button>
+        <button type="button" id="next" class="next">Next →</button>
+      </div>
+      <div class="dots" id="dots" aria-hidden="true"></div>
+    </div>
+
+    <!-- right: form -->
+    <div class="win" id="win">
+      <div class="win-h"><span>New Time Entry</span><small>▶ 00:00:00 ▾</small></div>
+      <div class="demo" id="demo"></div>
+      <div class="form">
+        <div class="entry-tag" id="etag"></div>
+        <div class="grid2">
+          <div>
+            <div class="row"><label>For User:</label><input class="fld" value="Johnson, Sarah" readonly tabindex="-1"></div>
+            <div class="row"><label>Client:</label><input class="fld" value="Patel, Rajesh" readonly tabindex="-1"></div>
+            <div class="row"><label>Matter:</label><input class="fld" value="SLS-2026-0441" readonly tabindex="-1"></div>
+            <div class="row" style="align-items:start"><label style="padding-top:4px">Activity:</label><div class="fld tall">SLS_Paralegal_013_Misc. Prep/Draft/Review</div></div>
+          </div>
+          <div>
+            <div class="row"><label>Entry Type:</label><input class="fld" value="Hourly Work" readonly tabindex="-1"></div>
+            <div class="row"><label>Overtime:</label><input type="checkbox" class="chk" tabindex="-1"></div>
+            <div class="row"><label>Billable:</label><input type="checkbox" class="chk" checked tabindex="-1"></div>
+            <div class="row"><label>Exclude From Invoice:</label><input type="checkbox" class="chk" tabindex="-1"></div>
+            <div class="row"><label>Date Created:</label><input class="fld" value="09/22/2026" readonly tabindex="-1"></div>
+          </div>
+        </div>
+        <div class="sec">
+          <div class="desc-l">Private Description: <em id="carriedTag"></em></div>
+          <div class="desc" id="desc">Reviewed and revised court submission documents, corrected deficiencies, and corresponded with client to gather required information for Matter SLS-2026-0441 (Patel, Rajesh).</div>
+        </div>
+        <div class="sec grid2">
+          <div>
+            <div class="row"><label>Date of Work:</label><input class="fld" value="09/22/2026" readonly tabindex="-1"></div>
+            <div class="row"><label>Start Time:</label><div class="tgt"><input class="fld" id="fStart" aria-label="Start time" autocomplete="off" spellcheck="false"></div></div>
+            <div class="row"><label>End Time:</label><div class="tgt"><input class="fld" id="fEnd" aria-label="End time" autocomplete="off" spellcheck="false"><button class="clr" id="clr" type="button" title="Clear End Time">✕ Clear</button></div></div>
+          </div>
+          <div>
+            <div class="row"><label style="font-weight:700;color:#222">Labor Time (hrs):</label>
+              <div class="lab-wrap">
+                <div class="clickbox" id="laborBox" style="flex:1"><input class="fld" id="fLabor" readonly tabindex="-1" aria-label="Labor time"></div>
+                <span class="badge" id="badge" style="display:none"></span>
+              </div></div>
+            <div class="row"><label>Rate $:</label><input class="fld" value="0.00" readonly tabindex="-1"></div>
+            <div class="row"><label>Travel Time (hrs):</label><input class="fld" readonly tabindex="-1"></div>
+            <div class="row"><label>Billable (hrs):</label><input class="fld" id="fBill" readonly tabindex="-1"></div>
+          </div>
+        </div>
+        <div class="foot">
+          <button class="btn b" id="bClose" type="button">Save &amp; Close</button>
+          <button class="btn w" id="bNew" type="button">Save &amp; New</button>
+          <button class="btn g" id="bDup" type="button">Save &amp; Duplicate</button>
+          <button class="btn w" id="bCancel" type="button">Cancel</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" role="status"></div>
+
+      <div class="saved" id="saved">
+        <div class="big">✓</div>
+        <h2>Both entries saved</h2>
+        <div>Two compliant entries now cover the full 4.5 hours of work.</div>
+        <div class="recap">
+          <div><span><b>Entry 1</b> &nbsp;9:00am – 12:00pm</span><b>3.00 hrs ✓</b></div>
+          <div><span><b>Entry 2</b> &nbsp;12:00pm – 1:30pm</span><b>1.50 hrs ✓</b></div>
+          <div><span>Hints used</span><b id="hintCount">0</b></div>
+        </div>
+        <div class="acts">
+          <button type="button" class="p" id="again">Try it again</button>
+          <button type="button" id="toWalk">Watch the walkthrough</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- mode chooser -->
+  <div class="choose" id="choose">
+    <div class="box">
+      <h2>How would you like to learn the 3-Hour Rule?</h2>
+      <p>You can switch between the two at any time using the toggle at the top.</p>
+      <div class="opts">
+        <button class="opt" type="button" id="oWalk"><span class="ic">👁</span><b>Walkthrough</b><span>Sit back and watch. Press Next and the form fills in for you, step by step.</span><em>Start here if this is new</em></button>
+        <button class="opt" type="button" id="oTry"><span class="ic">✎</span><b>Try It Yourself</b><span>Do each step on the form. Highlights, hints and instant feedback guide you.</span><em>Practice mode</em></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* ---------- time helpers ---------- */
+function parse(s){
+  s=(s||'').trim().toLowerCase();
+  if(!s) return {empty:true};
+  let m=s.match(/^(\d{1,2})(?::?(\d{2}))?\s*([ap])\.?(?:m\.?)?$/);
+  if(m){let h=+m[1],mi=+(m[2]||0); if(h<1||h>12||mi>59) return null;
+    if(m[3]==='p'&&h<12)h+=12; if(m[3]==='a'&&h===12)h=0; return {min:h*60+mi};}
+  m=s.match(/^(\d{1,2}):(\d{2})$/);
+  if(m){const h=+m[1],mi=+m[2]; if(h>=13&&h<=23&&mi<60) return {min:h*60+mi};}
+  return null;
+}
+function fmt(min){ if(min==null) return ''; const h24=Math.floor(min/60),mi=min%60;
+  return ((h24%12)||12)+':'+String(mi).padStart(2,'0')+(h24>=12?'pm':'am'); }
+function laborOf(s){ if(s.end==null||s.start==null) return null; return s.end<=s.start?0:(s.end-s.start)/60; }
+
+/* ---------- states ---------- */
+const START=540, MID=720, END=810;
+const INIT=[
+  {entry:null,start:START,end:END,carried:false},
+  {entry:1,start:START,end:END,carried:false},
+  {entry:1,start:START,end:MID,carried:false},
+  {entry:2,start:START,end:MID,carried:true},
+  {entry:2,start:MID,end:MID,carried:true},
+  {entry:2,start:MID,end:END,carried:true}
+];
+const initSt=n=>({...INIT[n]});
+const finalSt=n=>({...(n===0||n===2||n===5?INIT[n]:INIT[n+1])});
+
+/* ---------- step content ---------- */
+const STEPS=[
+ {color:'red',title:'The Problem — Block Billing',target:'labor',tag:'',
+  body:`<p>You have been working on a court submission for <b class="k">4.5 hours</b> and logged it as a single entry.</p>
+        <p><b>This is not allowed.</b> No single time entry may exceed <b class="k">3 hours</b>. This is called block billing — and it is not permitted.</p>`,
+  walkDo:'Notice the red Labor Time: 4.50 hrs.', tryDo:'Click the red <b>Labor Time</b> field.',
+  road:true,
+  tip:'⚠ A 4.5-hour entry must be split into two separate entries.',
+  hint:'Look at the right side of the form for the red field labelled “Labor Time (hrs)”, and click it.',
+  okMsg:'Right — 4.50 hrs is over the 3-hour limit. Click Next to learn the fix.'},
+ {color:'blue',title:'Step 1 — Close at the 3-Hour Mark',target:'end',tag:'',
+  body:`<p>Before you reach 4.5 hours, you should have <b class="k">saved and closed</b> at the 3-hour mark.</p>
+        <p>Your Start Time is 9:00am, so exactly 3 hours later is <b class="k">12:00pm</b>.</p>`,
+  walkDo:'End Time changes to 12:00pm. Labor Time becomes 3.00 hrs.', tryDo:'Type <b>12:00pm</b> in the <b>End Time</b> field.',
+  tip:'💡 Labor Time recalculates by itself and turns green when you are within the limit.',
+  hint:'Start Time 9:00am + 3 hours = 12:00pm. Click End Time (the glowing field) and type 12:00pm.'},
+ {color:'blue',title:'Step 2 — Save & Duplicate',target:'btnDup',tag:'',
+  body:`<p>Entry 1 is complete. Now save it and start the second entry for the remaining time.</p>
+        <p><b class="k">Save &amp; Duplicate</b> saves Entry 1 and opens Entry 2 with your description already filled in.</p>`,
+  walkDo:'Save &amp; Duplicate is clicked. Entry 2 opens.', tryDo:'Click <b>Save &amp; Duplicate</b>.',
+  tip:'💡 Use Save &amp; Duplicate (not Save &amp; Close) so you do not have to retype the description.',
+  hint:'It is the green button in the bottom-right of the form.',
+  okMsg:'Entry 1 saved ✓ — Entry 2 is open. Click Next.'},
+ {color:'green',title:'Step 3 — Update the Start Time',target:'start',tag:'— UPDATE START TIME',
+  body:`<p>Entry 2 opens with your description already carried over.</p>
+        <p>The first thing you must do is update the <b class="k">Start Time</b> to <b class="k">12:00pm</b> — the moment you resumed work. Do not leave the old start time in place.</p>`,
+  walkDo:'Start Time changes from 9:00am to 12:00pm.', tryDo:'Change <b>Start Time</b> to <b>12:00pm</b>.',
+  tip:'💡 The Start Time on Entry 2 must reflect when you actually continued working.',
+  hint:'Click the glowing Start Time field, replace 9:00am with 12:00pm.'},
+ {color:'green',title:'Step 4 — Clear & Re-Enter End Time',target:'end',tag:'— CLEAR & RE-ENTER END TIME',
+  body:`<p>The End Time from Entry 1 has carried over. <b class="k">Clear it</b> and enter the actual end time for this session: <b class="k">1:30pm</b>.</p>
+        <p>Bill4Time will then calculate <b class="k">1.50 hrs</b> for Entry 2 — within the 3-hour limit.</p>`,
+  walkDo:'End Time is cleared, then 1:30pm is entered.', tryDo:'<b>Clear</b> the End Time, then type <b>1:30pm</b>.',
+  checks:['Clear the End Time field','Enter 1:30pm'],
+  tip:'💡 Always clear the End Time on a duplicated entry before entering the new one.',
+  hint:'Click the ✕ Clear button inside End Time (or select the text and delete it), then type 1:30pm.'},
+ {color:'green',title:'Done — Two Compliant Entries',target:'btnClose',tag:'— READY TO SAVE',
+  body:`<p>Entry 2 is complete. Click <b class="k">Save &amp; Close</b> to finish.</p>
+        <p>You now have two entries that together cover the full 4.5 hours of work — each one within the 3-hour limit:</p>
+        <p style="margin-left:4px">• <b class="k">Entry 1:</b> 9:00am – 12:00pm = 3.00 hrs ✓<br>• <b class="k">Entry 2:</b> 12:00pm – 1:30pm = 1.50 hrs ✓</p>`,
+  walkDo:'Save &amp; Close finishes the second entry.', tryDo:'Click <b>Save &amp; Close</b>.',
+  tip:'💡 This is the correct way to handle any task that runs longer than 3 hours.',
+  hint:'It is the blue button at the bottom-left of the button row.',
+  okMsg:'Both entries saved ✓'}
+];
+
+/* ---------- app state ---------- */
+let mode=null, step=0, st=initSt(0), done=false, token=0, hints=0, subs={}, shownHint=false, busy=false;
+const el={start:$('fStart'),end:$('fEnd')};
+const btn={btnDup:$('bDup'),btnClose:$('bClose')};
+
+/* ---------- rendering the form ---------- */
+function render(){
+  const S=STEPS[step], labor=laborOf(st), tgt=S.target;
+  el.start.value=fmt(st.start); el.end.value=fmt(st.end);
+  $('etag').textContent=st.entry?('Entry '+st.entry+' of 2 '+(st.entry===2?S.tag:'')):'';
+  $('desc').classList.toggle('carried',!!st.carried);
+  $('carriedTag').textContent=st.carried?'(carried over by Save & Duplicate)':'';
+  paintFields();
+  $('clr').classList.toggle('show',mode==='try'&&step===4&&st.end!=null&&!busy);
+}
+function paintFields(){
+  const S=STEPS[step], tgt=S.target, labor=laborOf(st);
+  const L=labor==null?'—':labor.toFixed(2);
+  $('fLabor').value=L; $('fBill').value=L;
+  ['fLabor','fBill'].forEach(i=>{const f=$(i); f.className='fld'+(labor>3?' bad':(labor>0?' ok':''));});
+  const b=$('badge');
+  if(labor>3){b.style.display='';b.className='badge bad';b.innerHTML='✕ Exceeds<br>3-hr limit';}
+  else if(labor>0){b.style.display='';b.className='badge ok';b.innerHTML='✓ Within<br>limit';}
+  else b.style.display='none';
+  const canEdit=mode==='try'&&!busy;
+  ['start','end'].forEach(w=>{
+    const f=el[w]; let c='fld';
+    const editing=canEdit&&tgt===w;
+    if(editing) c+=' edit';
+    else c+=' static';
+    if(tgt===w){ c+= done?' ok':' target'; }
+    if(w==='end'&&labor>3) c+=' bad';
+    f.className=c; f.readOnly=!editing;
+    f.tabIndex=editing?0:-1;
+  });
+  $('laborBox').className='clickbox'+(tgt==='labor'&&!done?' target':'');
+  $('fLabor').classList.toggle('target',false);
+  ['btnDup','btnClose'].forEach(k=>{
+    btn[k].classList.toggle('target',tgt===k&&!done);
+  });
+}
+function toast(msg,ms=2200){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),ms);}
+
+/* ---------- instruction card ---------- */
+function renderCard(){
+  const S=STEPS[step];
+  $('ch').className='card-h '+S.color;
+  $('cn').textContent=step+1; $('ct').textContent=S.title;
+  let h=S.body;
+  if(S.road && mode==='walk'){
+    h+=`<div class="roadmap"><span><b>1</b>Close at the 3-hour mark</span><span><b>2</b>Save &amp; Duplicate</span><span><b>3</b>Reset the Start Time</span><span><b>4</b>Clear &amp; re-enter End Time</span></div>`;
+  }
+  if(step<5 || mode==='try'){
+    h+=`<div class="do ${mode==='walk'?'watch':''}"><span class="lbl">${mode==='walk'?'WATCH THE FORM':'YOUR TURN'}</span><span class="act">${mode==='walk'?S.walkDo:S.tryDo}</span>`;
+    if(mode==='try'&&S.checks) h+=`<ul class="checks" id="checks">${S.checks.map((c,i)=>`<li data-i="${i}">${c}</li>`).join('')}</ul>`;
+    h+='</div>';
+  }
+  h+=`<div class="tip ${step===0?'warn':''}">${S.tip}</div>`;
+  if(mode==='try'){
+    h+=`<div class="fb" id="fb" role="status" aria-live="polite"></div>
+        <div class="hintbox" id="hintbox">${S.hint}</div>
+        <div class="hints"><button type="button" id="hintBtn">💡 Hint</button><button type="button" id="showBtn">Show me</button></div>`;
+  }
+  $('cb').innerHTML=h;
+  if(mode==='try'){ $('hintBtn').onclick=()=>{hints++;$('hintbox').classList.add('show');}; $('showBtn').onclick=showMe; syncChecks(); }
+  // banner + nav
+  $('pill').textContent='Step '+(step+1)+' of 6';
+  $('bsub').innerHTML = mode==='walk'
+    ? '👁 <b>Walkthrough</b> — click <b>Next</b> to move through the scenario. The form on the right fills itself in at each step, so you only need to watch and read along. Want to practice? Switch to <b>Try It</b>.'
+    : '✎ <b>Try it yourself</b> — follow the <b>Your Turn</b> box on the left and complete each step on the form. The <b>glowing</b> area is where to act. Use Hint or Show me if you get stuck.';
+  $('demo').innerHTML = mode==='walk'
+    ? '<b>👁 WALKTHROUGH</b> — The form fills itself in each time you click Next. Just watch the highlighted field.'
+    : '<b>✎ TRY IT YOURSELF</b> — Complete the highlighted step on this form. Everything else is locked.';
+  $('mWalk').classList.toggle('on',mode==='walk'); $('mTry').classList.toggle('on',mode==='try');
+  renderDots(); renderNav();
+}
+function renderDots(){
+  const d=$('dots'); d.className='dots'+(mode==='walk'?' click':'');
+  d.innerHTML='';
+  for(let i=0;i<6;i++){const x=document.createElement('i'); x.className=i<step?'vis':(i===step?'cur':''); if(mode==='walk') x.onclick=()=>go(i,i>step?1:-1); d.appendChild(x);}
+}
+function renderNav(){
+  const nx=$('next'), bk=$('back');
+  bk.disabled=step===0||busy;
+  const last=step===5;
+  nx.innerHTML=last?'Start Over ↺':'Next →';
+  const can = mode==='walk' ? true : (last?true:done);
+  nx.disabled=!can;
+  nx.classList.toggle('ready',mode==='try'&&done&&!last);
+  nx.title=(!can)?'Complete the step to continue':'';
+}
+function fb(kind,msg){const f=$('fb'); if(!f) return; if(!msg){f.className='fb';f.textContent='';return;} f.className='fb show '+kind; f.innerHTML=msg;}
+function syncChecks(){
+  const c=document.querySelectorAll('#checks li'); if(!c.length) return;
+  c[0].classList.toggle('on',!!subs.cleared||done);
+  c[1].classList.toggle('on',done);
+}
+
+/* ---------- navigation ---------- */
+function go(n,dir){
+  token++; busy=false; step=n; done=false; subs={};
+  $('saved').classList.remove('show'); $('toast').classList.remove('show');
+  if(mode==='walk'){
+    if(dir>0){ st=initSt(n); done=false; }
+    else { st=finalSt(n); done=(n!==2&&n!==5); if(n===0) done=false; }
+    if(dir<=0){ done=true; }
+  } else { st=initSt(n); }
+  renderCard(); render();
+  if(mode==='walk'&&dir>0) animate(n,token);
+}
+async function animate(n,tok){
+  const alive=()=>tok===token, t=STEPS[n].target;
+  busy=true; render(); renderNav();
+  await sleep(550); if(!alive()) return;
+  if(t==='start'||t==='end'){
+    const target=fmt(finalSt(n)[t]);
+    el[t].value=''; st[t]=null; paintFields();
+    for(let i=1;i<=target.length;i++){ await sleep(95); if(!alive()) return; el[t].value=target.slice(0,i); }
+    await sleep(300); if(!alive()) return;
+    st=finalSt(n);
+  } else if(t==='btnDup'||t==='btnClose'){
+    btn[t].classList.add('pressed'); await sleep(300); if(!alive()) return; btn[t].classList.remove('pressed');
+    if(t==='btnDup'){ toast('Entry 1 saved — Entry 2 opened with the description carried over.',2400); await sleep(900); if(!alive()) return; st=initSt(3); }
+    else toast('Entry 2 saved — both entries complete.',2200);
+  }
+  done=true; busy=false; render(); renderNav();
+}
+function restart(){ go(0,1); }
+
+$('next').onclick=()=>{ if(step===5){restart();return;} if(mode==='try'&&!done) return; go(step+1,1); };
+$('back').onclick=()=>{ if(step>0) go(step-1,-1); };
+
+/* ---------- mode switching ---------- */
+function setMode(m){ mode=m; $('choose').classList.add('hide'); hints=0; go(0,1); }
+$('oWalk').onclick=()=>setMode('walk'); $('oTry').onclick=()=>setMode('try');
+$('mWalk').onclick=()=>{ if(mode!=='walk') setMode('walk'); };
+$('mTry').onclick=()=>{ if(mode!=='try') setMode('try'); };
+$('again').onclick=()=>setMode('try'); $('toWalk').onclick=()=>setMode('walk');
+
+/* ---------- Try It logic ---------- */
+function complete(msg){ done=true; paintFields(); syncChecks(); renderNav(); fb('ok','✓ '+msg); }
+function undo(){ if(done){done=false;} paintFields(); syncChecks(); renderNav(); }
+
+function onField(w,blur){
+  if(mode!=='try'||STEPS[step].target!==w) return;
+  const raw=el[w].value, p=parse(raw);
+  if(p&&p.empty){
+    st[w]=null; if(step===4&&w==='end'){subs.cleared=true; fb('info','Cleared. Now type the actual end time: <b>1:30pm</b>.');}
+    else fb('info','The field is empty — type the time, for example <b>12:00pm</b>.');
+    undo(); return;
+  }
+  if(!p){ undo(); if(blur) fb('no','I couldn’t read that time. Use a format like <b>12:00pm</b>.'); return; }
+  st[w]=p.min; paintFields();
+  const lab=laborOf(st);
+  if(step===1){
+    if(p.min===MID) return complete('Labor Time is now 3.00 hrs — within the limit. Click Next.');
+    undo();
+    if(p.min<=START) fb('no','End Time must be after the 9:00am start. Try <b>12:00pm</b>.');
+    else if(p.min>MID) fb('no','That’s '+lab.toFixed(2)+' hrs — still too long. Stop at the 3-hour mark: <b>12:00pm</b>.');
+    else fb('no','That’s only '+lab.toFixed(2)+' hrs. Entry 1 should run the full 3 hours: <b>12:00pm</b>.');
+  } else if(step===3){
+    if(p.min===MID) return complete('Entry 2 now starts at 12:00pm, when you resumed work. Click Next.');
+    undo(); fb('no','Entry 2 starts when you resumed work — right where Entry 1 ended: <b>12:00pm</b>.');
+  } else if(step===4){
+    if(p.min===END){ subs.cleared=true; return complete('Labor Time is 1.50 hrs — within the limit. Click Next.'); }
+    undo(); fb('no','Use the actual end time for this session: <b>1:30pm</b>.');
+  }
+}
+['start','end'].forEach(w=>{
+  el[w].addEventListener('input',()=>onField(w,false));
+  el[w].addEventListener('blur',()=>{ if(el[w].value!=='') onField(w,true); });
+  el[w].addEventListener('focus',()=>{ if(!el[w].readOnly) setTimeout(()=>el[w].select(),0); });
+  el[w].addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); onField(w,true); if(done&&step<5) $('next').focus(); }});
+});
+$('clr').onclick=()=>{ el.end.value=''; el.end.focus(); onField('end',false); };
+
+function wrongClick(what){
+  if(mode!=='try') return;
+  const S=STEPS[step];
+  if(done){ fb('info','This step is already done — click <b>Next</b>.'); return; }
+  fb('no','Not yet — for this step: '+S.tryDo.replace(/<\/?b>/g,'')+(what?'':''));
+  toast('Not this one — follow the highlighted area.');
+}
+$('laborBox').onclick=()=>{ if(mode==='try'&&step===0&&!done) complete(STEPS[0].okMsg); };
+$('bDup').onclick=()=>{
+  if(mode!=='try') return;
+  if(step===2&&!done){ pressed('bDup'); st=initSt(3); done=true; render(); renderNav(); toast('Entry 1 saved — Entry 2 opened.'); fb('ok','✓ '+STEPS[2].okMsg); return; }
+  wrongClick();
+};
+$('bClose').onclick=()=>{
+  if(mode!=='try') return;
+  if(step===5&&!done){ pressed('bClose'); done=true; render(); renderNav(); $('hintCount').textContent=hints; $('saved').classList.add('show');
+    try{window.parent.postMessage({type:'block-billing-complete',hintsUsed:hints},'*');}catch(e){}
+    return; }
+  wrongClick();
+};
+$('bNew').onclick=wrongClick; $('bCancel').onclick=wrongClick;
+function pressed(id){const b=$(id); b.classList.add('pressed'); setTimeout(()=>b.classList.remove('pressed'),250);}
+
+async function showMe(){
+  hints++; $('hintbox').classList.add('show');
+  if(done) return;
+  const t=STEPS[step].target;
+  if(t==='labor') return complete(STEPS[0].okMsg);
+  if(t==='btnDup') return $('bDup').click();
+  if(t==='btnClose') return $('bClose').click();
+  const tok=token; busy=true; paintFields();
+  const tx=step===1?'12:00pm':step===3?'12:00pm':'1:30pm';
+  el[t].readOnly=true; el[t].value=''; st[t]=null;
+  if(step===4){ subs.cleared=true; syncChecks(); }
+  for(let i=1;i<=tx.length;i++){ await sleep(80); if(tok!==token) return; el[t].value=tx.slice(0,i); }
+  busy=false; el[t].value=tx; render(); onField(t,true);
+}
+
+/* ---------- init ---------- */
+mode='walk'; step=0; st=initSt(0); renderCard(); render();
+})();
+</script>
+</body>
+</html>
